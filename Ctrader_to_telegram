@@ -77,8 +77,8 @@ namespace cAlgo.Robots
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
             string urlString = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}";
-            string apiToken = "1379675890:AAGzVzbxH4tl6dB6NQNaz8MdjjxSpfLD-6k";
-            string chatId = "-1001279386356";
+            string apiToken = "your token";
+            string chatId = "chat id it has to be something like this....not the name you set -40089....";
             string text = msg;
             urlString = String.Format(urlString, apiToken, chatId, text);
             //Print(urlString);
