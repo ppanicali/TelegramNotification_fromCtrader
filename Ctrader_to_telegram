@@ -1,0 +1,99 @@
+// SSL indicator bot to telegram : send a message to a telegram channel on evry bar 
+// can be a bull cross, a bear cross or no signal
+// can be applied to various timeframe and pairs at the time through a simple iteration
+// paolo panicali july2020 open source
+
+using System;
+using System.Linq;
+using cAlgo.API;
+using cAlgo.API.Indicators;
+using cAlgo.API.Internals;
+using cAlgo.Indicators;
+using System.IO;
+using System.Net;
+using System.Text;
+
+namespace cAlgo.Robots
+{
+
+
+    [Robot(TimeZone = TimeZones.UTC, AccessRights = AccessRights.Internet)]
+    public class SSLcrossTelegrammessage : Robot
+    {
+        [Parameter("Length", DefaultValue = 10)]
+        public int len { get; set; }
+
+// globals
+        SSL SSL_indicator;
+        double ssl_up;
+        double ssl_down;
+        double ssl_up_prev;
+        double ssl_down_prev;
+        string message;
+
+        protected override void OnStart()
+        {
+            //indicator instance
+            SSL_indicator = Indicators.GetIndicator<SSL>(len);
+        }
+
+        protected override void OnBar()
+        {
+            //load previous and current of the indicator to check for a bull or a bear cross over the last 2 bars
+            ssl_up = SSL_indicator.sslUp.Last(1);
+            ssl_down = SSL_indicator.sslDown.Last(1);
+
+            ssl_up_prev = SSL_indicator.sslUp.Last(2);
+            ssl_down_prev = SSL_indicator.sslDown.Last(2);
+
+            bool bull_cross_ok = ssl_up_prev < ssl_down_prev && ssl_up > ssl_down;
+            // if bull cross the message is sent
+            if (bull_cross_ok)
+            {
+                message = "Signal : ssl bull cross";
+                SendMessageToTelegram(message);
+            }
+
+
+            bool bear_cross_ok = ssl_up_prev > ssl_down_prev && ssl_up < ssl_down;
+            //if bear the message is sent
+            if (bear_cross_ok)
+            {
+                message = "Signal : ssl bear cross";
+                SendMessageToTelegram(message);
+            }
+
+            // if no bear no bull cross is detected send a No signal message
+            if (!bull_cross_ok && !bear_cross_ok)
+            {
+                message = "No Signal";
+                SendMessageToTelegram(message);
+            }
+        }
+
+        // send to telegram class, takes one argument, the text. Obviously the other arguments should be the chat id and maybe the bot token if using various
+        protected void SendMessageToTelegram(string msg)
+        {
+            ServicePointManager.Expect100Continue = true;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            string urlString = "https://api.telegram.org/bot{0}/sendMessage?chat_id={1}&text={2}";
+            string apiToken = "1379675890:AAGzVzbxH4tl6dB6NQNaz8MdjjxSpfLD-6k";
+            string chatId = "-1001279386356";
+            string text = msg;
+            urlString = String.Format(urlString, apiToken, chatId, text);
+            //Print(urlString);
+            WebRequest request = WebRequest.Create(urlString);
+            Stream rs = request.GetResponse().GetResponseStream();
+            StreamReader reader = new StreamReader(rs);
+            string line = "";
+            StringBuilder sb = new StringBuilder();
+            while (line != null)
+            {
+                line = reader.ReadLine();
+                if (line != null)
+                    sb.Append(line);
+            }
+            string response = sb.ToString();
+        }
+    }
+}
